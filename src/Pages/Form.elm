@@ -1,5 +1,6 @@
 module Pages.Form exposing (Model, Msg, page)
 
+import Dict
 import Effect exposing (Effect)
 import Gen.Params.Form exposing (Params)
 import Gen.Route
@@ -9,15 +10,16 @@ import Html.Events
 import Json.Decode
 import Loading exposing (defaultConfig)
 import Page
-import Request
+import Ports.UrlState
+import Request exposing (Request)
 import Shared
 import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page shared _ =
+page shared req =
     Page.advanced
-        { init = init
+        { init = init req
         , update = update shared
         , view = view shared
         , subscriptions = subscriptions
@@ -42,9 +44,20 @@ displayMsg maybeMsg =
             "Fetching..."
 
 
-init : ( Model, Effect Msg )
-init =
-    ( { firstName = "", lastName = "" }, Effect.fromShared Shared.SendHttpRequestOnce )
+keyFor : Model
+keyFor =
+    { firstName = "fn"
+    , lastName = "ln"
+    }
+
+
+init : Request -> ( Model, Effect Msg )
+init req =
+    ( { firstName = Maybe.withDefault "" <| Dict.get keyFor.firstName req.query
+      , lastName = Maybe.withDefault "" <| Dict.get keyFor.lastName req.query
+      }
+    , Effect.fromShared Shared.SendHttpRequestOnce
+    )
 
 
 
@@ -64,10 +77,14 @@ update _ msg model =
             ( model, Effect.none )
 
         SetFirstName val ->
-            ( { model | firstName = val }, Effect.none )
+            ( { model | firstName = val }
+            , Effect.fromCmd <| Ports.UrlState.paramChanged { key = keyFor.firstName, val = val }
+            )
 
         SetLastName val ->
-            ( { model | lastName = val }, Effect.none )
+            ( { model | lastName = val }
+            , Effect.fromCmd <| Ports.UrlState.paramChanged { key = keyFor.lastName, val = val }
+            )
 
 
 
