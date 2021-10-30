@@ -14,6 +14,7 @@ module Shared exposing
     , update
     )
 
+import Common.ForShared exposing (FormModel)
 import Json.Decode
 import Loading
 import Process
@@ -33,18 +34,21 @@ type alias User =
 type alias Model =
     { srvMsg : Maybe String
     , loadingState : Loading.LoadingState
+    , formModel : FormModel
     }
 
 
 type Msg
     = SendHttpRequestOnce
     | FakeHttpDataReceived (Result Json.Decode.Error String)
+    | StoreFormModel Common.ForShared.FormModel
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
 init _ _ =
     ( { srvMsg = Nothing
       , loadingState = Loading.On
+      , formModel = Common.ForShared.emptyFormModel
       }
     , Cmd.none
     )
@@ -79,6 +83,9 @@ update _ msg model =
 
                 Err _ ->
                     ( { model | srvMsg = Nothing }, Cmd.none )
+
+        StoreFormModel fm ->
+            ( { model | formModel = fm }, Cmd.none )
 
 
 subscriptions : Request -> Model -> Sub Msg

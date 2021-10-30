@@ -1,5 +1,6 @@
 module Pages.Form exposing (Model, Msg, page)
 
+import Common.ForShared exposing (FormModel)
 import Dict
 import Effect exposing (Effect)
 import Gen.Params.Form exposing (Params)
@@ -23,7 +24,7 @@ import View exposing (View)
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
-        { init = init req
+        { init = init shared req
         , update = update shared
         , view = view shared
         , subscriptions = subscriptions
@@ -38,6 +39,7 @@ keyFor : Model
 keyFor =
     { firstName = "fn"
     , lastName = "ln"
+    , restored = False
     }
 
 
@@ -46,15 +48,39 @@ keyFor =
 
 
 type alias Model =
-    { firstName : String, lastName : String }
+    FormModel
 
 
-init : Request -> ( Model, Effect Msg )
-init req =
-    ( { firstName = Maybe.withDefault "" <| Dict.get keyFor.firstName req.query
-      , lastName = Maybe.withDefault "" <| Dict.get keyFor.lastName req.query
-      }
-    , Effect.fromShared Shared.SendHttpRequestOnce
+init : Shared.Model -> Request -> ( Model, Effect Msg )
+init shared req =
+    let
+        fromQueryParamsWithDefault default key =
+            Maybe.withDefault default <| Dict.get key req.query
+
+        initFirstName =
+            fromQueryParamsWithDefault
+                shared.formModel.firstName
+                keyFor.firstName
+
+        initLastName =
+            fromQueryParamsWithDefault
+                shared.formModel.lastName
+                keyFor.lastName
+
+        isRestored =
+            Common.ForShared.emptyFormModel /= FormModel initFirstName initLastName False
+    in
+    ( { firstName = initFirstName, lastName = initLastName, restored = isRestored }
+    , Effect.batch
+        [ Effect.fromShared Shared.SendHttpRequestOnce
+
+        -- Restore query params on first page load or reentry
+        , Effect.fromCmd <| updateQueryParams keyFor.firstName initFirstName
+        , Effect.fromCmd <| updateQueryParams keyFor.lastName initLastName
+
+        -- Empty previously cached form data
+        , Tuple.second <| update shared SaveFormModel Common.ForShared.emptyFormModel
+        ]
     )
 
 
@@ -65,6 +91,7 @@ init req =
 type Msg
     = Submit
     | Reset
+    | SaveFormModel
     | SetFirstName String
     | SetLastName String
 
@@ -80,7 +107,7 @@ update _ msg model =
             ( model, Effect.none )
 
         Reset ->
-            ( Model "" ""
+            ( Common.ForShared.emptyFormModel
             , Effect.batch
                 [ Effect.fromCmd <| updateQueryParams keyFor.firstName ""
                 , Effect.fromCmd <| updateQueryParams keyFor.lastName ""
@@ -96,6 +123,9 @@ update _ msg model =
             ( { model | lastName = val }
             , Effect.fromCmd <| updateQueryParams keyFor.lastName val
             )
+
+        SaveFormModel ->
+            ( model, Effect.fromShared <| Shared.StoreFormModel model )
 
 
 
@@ -121,6 +151,18 @@ onSubmit msg =
     Html.Events.preventDefaultOn "submit" (Json.Decode.map alwaysPreventDefault (Json.Decode.succeed msg))
 
 
+notifyIfRestored : Bool -> Html.Html msg
+notifyIfRestored restored =
+    if restored then
+        Html.p
+            [ Html.Attributes.style "color" "orange"
+            ]
+            [ Html.text "NOTE: the form values have been restored from cached data or nav state" ]
+
+    else
+        Html.span [] []
+
+
 view : Shared.Model -> Model -> View Msg
 view shared model =
     { title = "A form"
@@ -130,6 +172,15 @@ view shared model =
         , Html.h2 [ Html.Attributes.style "max-width" "600px" ]
             [ Loading.render Loading.Circle { defaultConfig | color = "blue", size = 20 } shared.loadingState
             , Html.text ("Slow request: " ++ Maybe.withDefault "Fetching..." shared.srvMsg)
+            ]
+        , Html.div []
+            [ notifyIfRestored model.restored
+            , Html.label [] [ Html.text "Keep data" ]
+            , Html.input
+                [ Html.Attributes.type_ "checkbox"
+                , Html.Events.onClick SaveFormModel
+                ]
+                []
             ]
         , Html.pre [] [ Html.text <| Debug.toString <| model ]
         , Html.form
