@@ -16,6 +16,10 @@ import Shared
 import View exposing (View)
 
 
+
+-- PAGE
+
+
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
@@ -27,21 +31,7 @@ page shared req =
 
 
 
--- INIT
-
-
-type alias Model =
-    { firstName : String, lastName : String }
-
-
-displayMsg : Maybe String -> String
-displayMsg maybeMsg =
-    case maybeMsg of
-        Just msg ->
-            msg
-
-        Nothing ->
-            "Fetching..."
+-- UTILS
 
 
 keyFor : Model
@@ -49,6 +39,14 @@ keyFor =
     { firstName = "fn"
     , lastName = "ln"
     }
+
+
+
+-- INIT
+
+
+type alias Model =
+    { firstName : String, lastName : String }
 
 
 init : Request -> ( Model, Effect Msg )
@@ -110,19 +108,6 @@ onSubmit msg =
     Html.Events.preventDefaultOn "submit" (Json.Decode.map alwaysPreventDefault (Json.Decode.succeed msg))
 
 
-
---noinspection SpellCheckingInspection
-
-
-spinnerColor =
-    "#4B4BDEFF"
-
-
-debugFields : Model -> { firstName : String, lastName : String }
-debugFields model =
-    { firstName = model.firstName, lastName = model.lastName }
-
-
 view : Shared.Model -> Model -> View Msg
 view shared model =
     { title = "A form"
@@ -130,10 +115,10 @@ view shared model =
         [ Html.a [ Html.Attributes.href <| Gen.Route.toHref Gen.Route.List ] [ Html.text "GO TO LIST" ]
         , Html.h1 [] [ Html.text "My form!" ]
         , Html.h2 [ Html.Attributes.style "max-width" "600px" ]
-            [ Loading.render Loading.Circle { defaultConfig | color = spinnerColor, size = 20 } shared.loadingState
-            , Html.text ("Slow request: " ++ displayMsg shared.srvMsg)
+            [ Loading.render Loading.Circle { defaultConfig | color = "blue", size = 20 } shared.loadingState
+            , Html.text ("Slow request: " ++ Maybe.withDefault "Fetching..." shared.srvMsg)
             ]
-        , Html.pre [] [ Html.text <| Debug.toString <| debugFields model ]
+        , Html.pre [] [ Html.text <| Debug.toString <| model ]
         , Html.form
             [ Html.Attributes.style "display" "flex"
             , onSubmit Submit
