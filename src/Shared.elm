@@ -20,6 +20,7 @@ import Loading
 import Process
 import Request exposing (Request)
 import Task
+import View exposing (View)
 
 
 type alias Flags =
@@ -35,6 +36,7 @@ type alias Model =
     { srvMsg : Maybe String
     , loadingState : Loading.LoadingState
     , formModel : FormModel
+    , listView : Maybe (View Common.ForShared.ListMsg)
     }
 
 
@@ -42,6 +44,7 @@ type Msg
     = SendHttpRequestOnce
     | FakeHttpDataReceived (Result Json.Decode.Error String)
     | StoreFormModel Common.ForShared.FormModel
+    | StoreListView (View Common.ForShared.ListMsg)
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
@@ -49,6 +52,7 @@ init _ _ =
     ( { srvMsg = Nothing
       , loadingState = Loading.On
       , formModel = Common.ForShared.emptyFormModel
+      , listView = Nothing
       }
     , Cmd.none
     )
@@ -86,6 +90,9 @@ update _ msg model =
 
         StoreFormModel fm ->
             ( { model | formModel = fm }, Cmd.none )
+
+        StoreListView view ->
+            ( { model | listView = Just view }, Cmd.none )
 
 
 subscriptions : Request -> Model -> Sub Msg
