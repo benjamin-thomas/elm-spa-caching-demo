@@ -14,7 +14,11 @@
 
     function insertUrlParam(key, value) {
         const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set(key, value);
+        if (value) {
+            searchParams.set(key, value);
+        } else {
+            searchParams.delete(key);
+        }
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + searchParams.toString();
         window.history.replaceState(null, '', newUrl);
     }
