@@ -7,4 +7,4 @@ type alias Param =
     }
 
 
-port paramChanged : Param -> Cmd msg
+port queryParamChanged : Param -> Cmd msg

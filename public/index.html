@@ -20,7 +20,7 @@
     }
 
     const app = Elm.Main.init();
-    app.ports['paramChanged'].subscribe(param => {
+    app.ports['queryParamChanged'].subscribe(param => {
         insertUrlParam(param.key, param.val)
     });
 </script>

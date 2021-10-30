@@ -64,8 +64,13 @@ init req =
 
 type Msg
     = Submit
+    | Reset
     | SetFirstName String
     | SetLastName String
+
+
+updateQueryParams key val =
+    Ports.UrlState.queryParamChanged { key = key, val = val }
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -74,14 +79,22 @@ update _ msg model =
         Submit ->
             ( model, Effect.none )
 
+        Reset ->
+            ( Model "" ""
+            , Effect.batch
+                [ Effect.fromCmd <| updateQueryParams keyFor.firstName ""
+                , Effect.fromCmd <| updateQueryParams keyFor.lastName ""
+                ]
+            )
+
         SetFirstName val ->
             ( { model | firstName = val }
-            , Effect.fromCmd <| Ports.UrlState.paramChanged { key = keyFor.firstName, val = val }
+            , Effect.fromCmd <| updateQueryParams keyFor.firstName val
             )
 
         SetLastName val ->
             ( { model | lastName = val }
-            , Effect.fromCmd <| Ports.UrlState.paramChanged { key = keyFor.lastName, val = val }
+            , Effect.fromCmd <| updateQueryParams keyFor.lastName val
             )
 
 
@@ -142,6 +155,11 @@ view shared model =
                     []
                 ]
             , Html.button [ Html.Attributes.hidden True ] [ Html.text "Submit" ]
+            , Html.button
+                [ Html.Attributes.type_ "button"
+                , Html.Events.onClick Reset
+                ]
+                [ Html.text "Reset" ]
             ]
         ]
     }
