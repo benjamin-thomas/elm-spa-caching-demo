@@ -11,15 +11,18 @@
 <!--suppress HtmlUnknownTarget -->
 <script src="/dist/elm.js"></script>
 <script>
-
     function insertUrlParam(key, value) {
-        const searchParams = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.search);
+
         if (value) {
-            searchParams.set(key, value);
+            params.set(key, value);
         } else {
-            searchParams.delete(key);
+            params.delete(key);
         }
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + searchParams.toString();
+
+        const fullPath = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        const newUrl = fullPath + '?' + params.toString();
+
         window.history.replaceState(null, '', newUrl);
     }
 
