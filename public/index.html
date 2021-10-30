@@ -11,7 +11,7 @@
 <!--suppress HtmlUnknownTarget -->
 <script src="/dist/elm.js"></script>
 <script>
-    function insertUrlParam(key, value) {
+    function updateQueryParam(key, value) {
         const params = new URLSearchParams(window.location.search);
 
         if (value) {
@@ -21,14 +21,21 @@
         }
 
         const fullPath = window.location.protocol + "//" + window.location.host + window.location.pathname;
-        const newUrl = fullPath + '?' + params.toString();
+        const strParams = params.toString();
+
+        let newUrl;
+        if (strParams) {
+            newUrl = fullPath + '?' + strParams;
+        } else {
+            newUrl = fullPath;
+        }
 
         window.history.replaceState(null, '', newUrl);
     }
 
     const app = Elm.Main.init();
     app.ports['queryParamChanged'].subscribe(param => {
-        insertUrlParam(param.key, param.val)
+        updateQueryParam(param.key, param.val)
     });
 </script>
 </body>
